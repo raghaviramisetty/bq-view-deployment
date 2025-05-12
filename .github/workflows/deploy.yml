@@ -36,10 +36,11 @@ jobs:
         uses: google-github-actions/setup-gcloud@v1
 
       - name: Deploy SQL views to Dev
-        run: | for file in views/dev/*.sql; do
-        echo "Deploying $file to Dev project..."
-         bq query \
-         --use_legacy_sql=false \
-         --project_id=fluid-analogy-459522 \
-         "$(cat $file)"
-        done
+        run: | 
+          for file in views/*.sql; do
+            echo "Deploying $file to Dev project..."
+             bq query \
+               --use_legacy_sql=false \
+               --project_id=fluid-analogy-459522 \
+               "$(cat $file)"
+            done
