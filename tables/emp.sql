@@ -1,1 +1,1 @@
-Create or replace table TestDataset.emp (id INT 64,name String);
+Create or replace table TestDataset.emp (id INT64,name String);
