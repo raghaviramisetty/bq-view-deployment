@@ -39,5 +39,5 @@ jobs:
         run: | 
           for file in views/*.sql; do
             echo "Deploying $file to Dev project..."
-             bq query --use_legacy_sql=false --project_id=fluid-analogy-459522 "$(cat $file)"
+             bq query --use_legacy_sql=false --project_id=fluid-analogy-459522-a0 "$(cat $file)"
           done
