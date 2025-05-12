@@ -41,3 +41,7 @@ jobs:
             echo "Deploying $file to Dev project..."
              bq query --use_legacy_sql=false --project_id=fluid-analogy-459522-a0 "$(cat $file)"
           done
+          for file in tables/*.sql; do
+            echo "Deploying $file to Dev project..."
+             bq query --use_legacy_sql=false --project_id=fluid-analogy-459522-a0 "$(cat $file)"
+          done
