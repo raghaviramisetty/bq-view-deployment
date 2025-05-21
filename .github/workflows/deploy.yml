@@ -19,8 +19,12 @@ jobs:
         id: set
         run: |
           echo "Reading config for branch: $GITHUB_REF_NAME"
-          deployment=$(yq -o=json '.deployment[]| select (.value.ref == "'$GITHUB_REF_NAME'")' itv.yaml)
-          echo "deployment=$deployment" >> $GITHUB_OUTPUT
+          BRANCH_REF="$GITHUB_REF"
+          
+            deployment=$(yq -o=json 'to_entries |map(select (.value.ref == "'$BRANCH_REF'") |.[0].value' itv.yaml)
+          echo "deployment<<EOF" >> $GITHUB_OUTPUT
+          echo "$deployment" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
         
   deploy:
     needs: metadata
