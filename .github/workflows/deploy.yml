@@ -1,42 +1,52 @@
-# This is a basic workflow to help you get started with Actions
-
 name: CI
 
-# Controls when the workflow will run
 on:
-  # Triggers the workflow on push or pull request events but only for the "main" branch
   push:
     branches: [ "dev","main" ]
   pull_request:
     branches: [ "dev","main" ]
-
-  # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
-# A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  deploy-dev:
-    if: github.ref == 'refs/heads/dev'
+  metadata:
+    name: Read project Id and dataset
     runs-on: ubuntu-latest
-    name: Deploy to Dev (fluid-analogy)
-
-    # Steps represent a sequence of tasks that will be executed as part of the job
+    outputs: 
+      Deployment: ${{steps.set.outputs.deployment}}
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
-
-      # Runs a single command using the runners shell
+      - name: parse itv.yaml
+        id: set
+        run: |
+          echo "Reading config for branch: $GITHUB_REF_NAME"
+          deployment=$(yq -o=json '.deployment[]| select (.environment == "'$GITHUB_REF_NAME'")' itv.yaml)
+          echo "deployment=$deployment" >> $GITHUB_OUTPUT
+        
+  deploy:
+    needs: metadata
+#    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v3
       - name: Authenticate to GCP (Dev)
         uses: google-github-actions/auth@v1
         with:
           credentials_json: ${{ secrets.GCP_DEV_CREDS }}
 
-      # Runs a set of commands using the runners shell
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
 
-      - name: Deploy SQL views to Dev
+      - name: Create dataset & deploy views and tables to Dev
         run: | 
+          DEPLOYMENT_JSON='${{ needs.metadata.outputs.deployment }}'
+          PROJECT_ID=$(echo "$DEPLOYMENT_JSON" |jq -r '.project_id')
+          DATASET=$(echo "$DEPLOYMENT_JSON" | jq -r '.dataset')
+
+          echo "Using PROJECT_ID=$PROJECT_ID"
+          echo "Using DATASET=$DATASET"
+          echo "Creating datset..."
+          bq --location=US mk --dataset --project_id="$PROJECT_ID" "$DATASET" || echo "dataset may already exist"
           echo "files found:"
           ls -l tables/
           for file in views/*.sql; do
