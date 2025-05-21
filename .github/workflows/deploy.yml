@@ -56,22 +56,10 @@ jobs:
            echo "Deploying views..."
             for file in views/*.sql; do
               echo "Processing $file..."
-                RAW_SQL=$(cat "$file")
-                  
-                  # Check if it's a view file
-                  if echo "$RAW_SQL" | grep -iq 'CREATE OR REPLACE VIEW'; then
-                  # Extract view name (after 'CREATE OR REPLACE VIEW') — assumes no backticks
-                  VIEW_NAME=$(echo "$RAW_SQL" | grep -i 'CREATE OR REPLACE VIEW' | awk '{print $5}')
-                  
-                  # Compose full qualified name
-                  FULL_VIEW_LINE="CREATE OR REPLACE VIEW \`$PROJECT_ID.$DATASET.$VIEW_NAME\`"
-                  
-                  # Replace the original line with fully qualified view
-                  FINAL_SQL=$(echo "$RAW_SQL" | sed "s/CREATE OR REPLACE VIEW $VIEW_NAME/$FULL_VIEW_LINE/")
-                  
-                  echo "Deploying view: $PROJECT_ID.$DATASET.$VIEW_NAME"
+                FINAL_SQL=$(cat "$file" \
+                  | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" \
+                  | sed "s/{{DATASET}}/$DATASET/g")
+              
+                  echo "Deploying $file to Dev project..."
                   bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
-                  else
-                  echo "Skipping $file (no CREATE OR REPLACE VIEW found)"
-                  fi
                   done
