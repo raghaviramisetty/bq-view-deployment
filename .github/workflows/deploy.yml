@@ -51,8 +51,8 @@ jobs:
           echo "Using DATASET=$DATASET"
           echo "Creating datset..."
           bq --location=US mk --dataset --project_id="$PROJECT_ID" "$DATASET" || echo "dataset may already exist"
-          echo "files found:"
-          ls -l tables/
+          echo "View files found:"
+          ls -l views/
            echo "Deploying views..."
             for file in views/*.sql; do
               echo "Processing $file..."
@@ -63,3 +63,16 @@ jobs:
                   echo "Deploying $file to Dev project..."
                   bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
                   done
+           echo "Table files found:"
+            ls -l tables/
+            echo "Deploying tables..."
+            for file in tables/*.sql; do
+            FINAL_SQL=$(cat "$file" \
+                  | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" \
+                  | sed "s/{{DATASET}}/$DATASET/g")
+              
+                  echo "Deploying $file to Dev project..."
+              echo "Deploying $file to Dev project..."
+             bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
+          done
+
