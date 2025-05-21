@@ -1,1 +1,1 @@
-CREATE or REPLACE VIEW test_view As Select 'TEST' as greeting;
+CREATE or REPLACE VIEW `{{PROJECT_ID}}.{{DATASET}}.test_view` As Select 'TEST' as greeting;
