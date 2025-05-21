@@ -19,7 +19,7 @@ jobs:
         id: set
         run: |
           echo "Reading config for branch: $GITHUB_REF_NAME"
-          deployment=$(yq -o=json '.deployment[]| select (.environment == "'$GITHUB_REF_NAME'")' itv.yaml)
+          deployment=$(yq -o=json '.deployment[]| select (.value.ref == "'$GITHUB_REF_NAME'")' itv.yaml)
           echo "deployment=$deployment" >> $GITHUB_OUTPUT
         
   deploy:
