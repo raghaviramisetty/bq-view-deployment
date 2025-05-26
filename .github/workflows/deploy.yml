@@ -46,34 +46,52 @@ jobs:
           DEPLOYMENT_JSON='${{ needs.metadata.outputs.deployment }}'
           PROJECT_ID=$(echo "$DEPLOYMENT_JSON" |jq -r '.project_id')
           DATASET=$(echo "$DEPLOYMENT_JSON" | jq -r '.dataset')
-
+          CREATE_DATASET=$(echo "$DEPLOYMENT_JSON" | jq -r '.create_dataset')
+          VIEW_SCOPE=$(echo "$DEPLOYMENT_JSON" | jq -r '.view_scope')
+          TABLE_SCOPE=$(echo "$DEPLOYMENT_JSON" | jq -r '.table_scope')
           echo "Using PROJECT_ID=$PROJECT_ID"
           echo "Using DATASET=$DATASET"
-          echo "Creating datset..."
+          echo "VIEW_SCOPE=$VIEW_SCOPE"
+          echo "TABLE_SCOPE=$TABLE_SCOPE"
+          # Create dataset if required
+          if [[ "$CREATE_DATASET" == "true" ]]; then
+          echo "Creating datset... is $CREATE_DATASET "
           bq --location=US mk --dataset --project_id="$PROJECT_ID" "$DATASET" || echo "dataset may already exist"
-          VIEW_COUNT=$(find views -maxdepth 1 -type f -name '*.sql' | wc -l)
-          echo "Total View files found:$VIEW_COUNT"
+          else
+          echo "Skipping dataset creation"
+          fi
+          # Process Views
+          if [[ -n "$VIEW_SCOPE" ]]; then
+          IFS=',' read -r -a VIEWS <<< "$VIEW_SCOPE"
           echo "Deploying views..."
-            for file in views/*.sql; do
-              echo "Processing $file..."
-                FINAL_SQL=$(cat "$file" \
-                  | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" \
-                  | sed "s/{{DATASET}}/$DATASET/g")
-              
-                  echo "Deploying $file to Dev project..."
-                  bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
-                  done
-          
-           TABLE_COUNT=$(find tables -maxdepth 1 -type f -name '*.sql' | wc -l)
-           echo "Table files found:$TABLE_COUNT"
-           echo "Deploying tables..."
-            for file in tables/*.sql; do
-            echo "Processing $file..."
-              FINAL_SQL=$(cat "$file" \
-                  | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" \
-                  | sed "s/{{DATASET}}/$DATASET/g")
-              
-              echo "Deploying $file to Dev project..."
-             bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
+          for file in views/*.sql; do
+          base_name=$(basename "$file" .sql)
+          if [[ "$VIEW_SCOPE" == "all" || " ${VIEWS[*]} " =~ " $base_name " ]]; then
+          echo "Deploying view: $base_name"
+          FINAL_SQL=$(cat "$file" | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" | sed "s/{{DATASET}}/$DATASET/g")
+          bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
+          else
+          echo "Skipping view: $base_name"
+          fi
           done
-
+          else
+          echo "No view_scope defined — skipping view deployment"
+          fi
+          
+           # Process Tables
+          if [[ -n "$TABLE_SCOPE" ]]; then
+          IFS=',' read -r -a TABLES <<< "$TABLE_SCOPE"
+          echo "Deploying tables..."
+          for file in tables/*.sql; do
+          base_name=$(basename "$file" .sql)
+          if [[ "$TABLE_SCOPE" == "all" || " ${TABLES[*]} " =~ " $base_name " ]]; then
+          echo "Deploying table: $base_name"
+          FINAL_SQL=$(cat "$file" | sed "s/{{PROJECT_ID}}/$PROJECT_ID/g" | sed "s/{{DATASET}}/$DATASET/g")
+          bq query --use_legacy_sql=false --project_id="$PROJECT_ID" "$FINAL_SQL"
+          else
+          echo "Skipping table: $base_name"
+          fi
+          done
+          else
+          echo "No table_scope defined — skipping table deployment"
+          fi
