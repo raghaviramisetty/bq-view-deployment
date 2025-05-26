@@ -2,4 +2,7 @@ dev:
   ref: refs/heads/dev
   project_id: fluid-analogy-459522-a0
   dataset: TestDataset_1
+  create_dataset: true
+  view_scope: all
+  table_Scope: ""
   
