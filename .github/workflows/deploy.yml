@@ -40,7 +40,18 @@ jobs:
 
       - name: Set up gcloud
         uses: google-github-actions/setup-gcloud@v1
-
+        
+      - name: Enable BigQuery API if requested
+        run: |
+          DEPLOYMENT_JSON='${{ needs.metadata.outputs.deployment }}'
+          PROJECT_ID=$(echo "$DEPLOYMENT_JSON" | jq -r '.project_id')
+          ENABLE_BQ=$(echo "$DEPLOYMENT_JSON" | jq -r '.enable_bigquery_api // "false"')
+          if [[ "$ENABLE_BQ" == "true" ]]; then
+            gcloud services enable bigquery.googleapis.com --project="$PROJECT_ID"
+            echo "BigQuery API enabled for $PROJECT_ID."
+          else
+            echo "Enable BigQuery API not requested, skipping."
+          fi
       - name: Create dataset & deploy views and tables to Dev
         run: | 
           DEPLOYMENT_JSON='${{ needs.metadata.outputs.deployment }}'
