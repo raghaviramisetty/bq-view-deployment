@@ -5,4 +5,5 @@ dev:
   create_dataset: false
   view_scope: view,test
   table_Scope: ""
+  enable_bigquery_api: true  
   
